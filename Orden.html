@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Órdenes de Trabajo · J&D Taller Digital</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Inter:wght@400;500&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="Orden.css">
+</head>
+<body>
+ 
+<div class="page">
+ 
+  <!-- ===== HEADER ===== -->
+  <header class="top">
+    <div class="eyebrow"><span class="dot"></span>MECÁNICA AUTOMOTRIZ J&amp;D · TALLER DIGITAL</div>
+    <div class="top-row">
+      <h1 class="title">
+        <svg class="wrench" viewBox="0 0 24 24" fill="none" stroke="#E8790A" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="4" y="4" width="16" height="16" rx="2"/>
+          <path d="M8 2v4M16 2v4M4 10h16"/>
+        </svg>
+        Órdenes de trabajo
+      </h1>
+      <div class="top-actions">
+        <a href="index.html" class="btn-secondary">← Inicio</a>
+        <button type="button" class="btn-primary" id="btnNuevaOrden">+ Nueva orden</button>
+      </div>
+    </div>
+    <p class="subline">Gestiona el ingreso, avance y cierre de cada orden del taller.</p>
+  </header>
+ 
+  <!-- ===== ESTADÍSTICAS ===== -->
+  <section class="stats">
+    <div class="stat-card">
+      <div class="stat-value" id="statTotal">0</div>
+      <div class="stat-label">Total</div>
+    </div>
+    <div class="stat-card stat-pendiente">
+      <div class="stat-value" id="statPendiente">0</div>
+      <div class="stat-label">Pendientes</div>
+    </div>
+    <div class="stat-card stat-proceso">
+      <div class="stat-value" id="statProceso">0</div>
+      <div class="stat-label">En proceso</div>
+    </div>
+    <div class="stat-card stat-completada">
+      <div class="stat-value" id="statCompletada">0</div>
+      <div class="stat-label">Completadas</div>
+    </div>
+  </section>
+ 
+  <!-- ===== FILTROS ===== -->
+  <section class="filters">
+    <div class="fake-input-row">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#A6A092" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="11" cy="11" r="7"/>
+        <path d="M21 21l-4.3-4.3"/>
+      </svg>
+      <input type="text" id="buscador" placeholder="Buscar por placa, cliente o vehículo…">
+    </div>
+    <div class="filter-chips" id="filterChips">
+      <button type="button" class="chip active" data-estado="todas">Todas</button>
+      <button type="button" class="chip" data-estado="Pendiente">Pendientes</button>
+      <button type="button" class="chip" data-estado="En proceso">En proceso</button>
+      <button type="button" class="chip" data-estado="Completada">Completadas</button>
+    </div>
+  </section>
+ 
+  <!-- ===== LISTA DE ÓRDENES ===== -->
+  <section class="order-list" id="orderList">
+    <!-- Las tarjetas de orden se generan dinámicamente aquí -->
+  </section>
+ 
+  <!-- ===== ESTADO VACÍO ===== -->
+  <div class="empty-state" id="emptyState">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="4" y="4" width="16" height="16" rx="2"/>
+      <path d="M8 2v4M16 2v4M4 10h16"/>
+    </svg>
+    <p>Todavía no hay órdenes registradas</p>
+    <span>Crea la primera con el botón "+ Nueva orden"</span>
+  </div>
+ 
+  <div class="footnote">SISTEMA WEB INTELIGENTE DE GESTIÓN Y DIAGNÓSTICO — J&amp;D</div>
+</div>
+ 
+<!-- ===== MODAL: NUEVA ORDEN DE TRABAJO ===== -->
+<div class="modal-overlay" id="modalOrden" aria-hidden="true">
+  <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="modalOrdenTitle">
+    <div class="modal-head">
+      <h2 id="modalOrdenTitle">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="4" y="4" width="16" height="16" rx="2"/>
+          <path d="M8 2v4M16 2v4M4 10h16"/>
+        </svg>
+        Nueva orden de trabajo
+      </h2>
+      <button type="button" class="modal-close" data-close="modalOrden" aria-label="Cerrar">&times;</button>
+    </div>
+ 
+    <form id="formOrden" novalidate>
+      <div class="form-grid">
+        <div class="field">
+          <label for="ordenPlaca">Placa / VIN <span class="req">*</span></label>
+          <input type="text" id="ordenPlaca" name="placa" maxlength="10" placeholder="Ej. AQ-2024-HX" required>
+        </div>
+        <div class="field">
+          <label for="ordenCliente">Cliente</label>
+          <input type="text" id="ordenCliente" name="cliente" placeholder="Nombre del propietario">
+        </div>
+        <div class="field">
+          <label for="ordenMarca">Marca / Modelo</label>
+          <input type="text" id="ordenMarca" name="marcaModelo" placeholder="Ej. Toyota Corolla">
+        </div>
+        <div class="field">
+          <label for="ordenKm">Kilometraje</label>
+          <input type="number" id="ordenKm" name="kilometraje" min="0" placeholder="Ej. 87340">
+        </div>
+        <div class="field">
+          <label for="ordenPrioridad">Prioridad</label>
+          <select id="ordenPrioridad" name="prioridad">
+            <option value="Normal" selected>Normal</option>
+            <option value="Alta">Alta</option>
+            <option value="Urgente">Urgente</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="ordenEstado">Estado inicial</label>
+          <select id="ordenEstado" name="estado">
+            <option value="Pendiente" selected>Pendiente</option>
+            <option value="En proceso">En proceso</option>
+          </select>
+        </div>
+        <div class="field field-full">
+          <label for="ordenSintoma">Síntoma / Motivo de ingreso <span class="req">*</span></label>
+          <textarea id="ordenSintoma" name="sintoma" rows="3" placeholder="Describe el problema reportado por el cliente…" required></textarea>
+        </div>
+      </div>
+ 
+      <div class="modal-footer">
+        <button type="button" class="btn-secondary" data-close="modalOrden">Cancelar</button>
+        <button type="submit" class="btn-primary">Crear orden</button>
+      </div>
+    </form>
+  </div>
+</div>
+ 
+<!-- ===== TOAST DE CONFIRMACIÓN ===== -->
+<div class="toast" id="toast" aria-live="polite"></div>
+ 
+<script src="api.js"></script>
+<script>
+  let ordenes = [];
+
+  function hoyISO(){ return new Date().toISOString().slice(0,10); }
+  function formatearFecha(iso){
+    if(!iso) return '';
+    const [y,m,d] = iso.split('-');
+    return d + '/' + m + '/' + y;
+  }
+
+  /* ===================== CARGA DESDE LA BASE DE DATOS ===================== */
+  async function cargarOrdenes(){
+    try{
+      ordenes = await api('/api/ordenes');
+    }catch(err){
+      ordenes = [];
+      showToast('⚠ ' + err.message);
+    }
+    render();
+  }
+
+  /* ===================== MODAL ===================== */
+  function openModal(id){
+    const overlay = document.getElementById(id);
+    overlay.classList.add('active');
+    overlay.setAttribute('aria-hidden', 'false');
+    document.body.style.overflow = 'hidden';
+    const firstInput = overlay.querySelector('input, select, textarea');
+    if (firstInput) setTimeout(() => firstInput.focus(), 50);
+  }
+  function closeModal(id){
+    const overlay = document.getElementById(id);
+    overlay.classList.remove('active');
+    overlay.setAttribute('aria-hidden', 'true');
+    document.body.style.overflow = '';
+  }
+  document.getElementById('btnNuevaOrden').addEventListener('click', () => openModal('modalOrden'));
+  document.querySelectorAll('[data-close]').forEach(btn => {
+    btn.addEventListener('click', () => closeModal(btn.getAttribute('data-close')));
+  });
+  document.querySelectorAll('.modal-overlay').forEach(overlay => {
+    overlay.addEventListener('click', (e) => { if (e.target === overlay) closeModal(overlay.id); });
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') document.querySelectorAll('.modal-overlay.active').forEach(o => closeModal(o.id));
+  });
+
+  function showToast(msg){
+    const toast = document.getElementById('toast');
+    toast.textContent = msg;
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 3200);
+  }
+
+  /* ===================== CREAR ORDEN ===================== */
+  const formOrden = document.getElementById('formOrden');
+  formOrden.addEventListener('submit', async function(e){
+    e.preventDefault();
+
+    const placa = document.getElementById('ordenPlaca').value.trim();
+    const sintoma = document.getElementById('ordenSintoma').value.trim();
+
+    if (!placa || !sintoma){
+      showToast('⚠ Completa la placa/VIN y el síntoma para continuar.');
+      return;
+    }
+
+    const btn = formOrden.querySelector('[type="submit"]');
+    btn.disabled = true;
+    try{
+      await api('/api/ordenes', {
+        method: 'POST',
+        body: {
+          placa: placa.toUpperCase(),
+          cliente: document.getElementById('ordenCliente').value.trim(),
+          marcaModelo: document.getElementById('ordenMarca').value.trim(),
+          kilometraje: document.getElementById('ordenKm').value,
+          prioridad: document.getElementById('ordenPrioridad').value,
+          estado: document.getElementById('ordenEstado').value,
+          sintoma: sintoma
+        }
+      });
+      formOrden.reset();
+      closeModal('modalOrden');
+      showToast('✔ Orden de trabajo creada para ' + placa.toUpperCase());
+      await cargarOrdenes();
+    }catch(err){
+      showToast('⚠ ' + err.message);
+    }finally{
+      btn.disabled = false;
+    }
+  });
+
+  /* ===================== RENDER DE LISTA ===================== */
+  let filtroEstado = 'todas';
+  let filtroTexto = '';
+
+  document.getElementById('filterChips').addEventListener('click', (e) => {
+    const chip = e.target.closest('.chip');
+    if (!chip) return;
+    document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+    chip.classList.add('active');
+    filtroEstado = chip.getAttribute('data-estado');
+    render();
+  });
+
+  document.getElementById('buscador').addEventListener('input', (e) => {
+    filtroTexto = e.target.value.trim().toLowerCase();
+    render();
+  });
+
+  function badgeClasePrioridad(p){
+    if (p === 'Urgente') return 'badge badge-urgente';
+    if (p === 'Alta') return 'badge badge-alta';
+    return 'badge badge-normal';
+  }
+  function badgeClaseEstado(estado){
+    if (estado === 'Completada') return 'badge badge-completada';
+    if (estado === 'En proceso') return 'badge badge-proceso';
+    return 'badge badge-pendiente';
+  }
+
+  function crearCardOrden(orden){
+    const card = document.createElement('div');
+    card.className = 'order-card';
+    card.innerHTML = `
+      <div class="order-card-head">
+        <div class="order-plate">${esc(orden.placa)}</div>
+        <div class="order-date">📅 ${esc(formatearFecha(orden.fecha))}</div>
+      </div>
+      ${orden.marcaModelo || orden.cliente ? `
+      <div class="order-sub">
+        ${orden.marcaModelo ? `<span>${esc(orden.marcaModelo)}</span>` : ''}
+        ${orden.cliente ? `<span>· ${esc(orden.cliente)}</span>` : ''}
+        ${orden.kilometraje ? `<span>· ${Number(orden.kilometraje).toLocaleString('es-PE')} km</span>` : ''}
+      </div>` : ''}
+      <div class="order-badges">
+        <span class="${badgeClasePrioridad(orden.prioridad)}">${esc(orden.prioridad)}</span>
+        <span class="${badgeClaseEstado(orden.estado)}">${esc(orden.estado)}</span>
+      </div>
+      <div class="order-sintoma"><strong>Síntoma:</strong> ${esc(orden.sintoma)}</div>
+      <div class="order-actions">
+        <select class="estado-select" data-id="${orden.id}">
+          <option value="Pendiente" ${orden.estado==='Pendiente'?'selected':''}>Pendiente</option>
+          <option value="En proceso" ${orden.estado==='En proceso'?'selected':''}>En proceso</option>
+          <option value="Completada" ${orden.estado==='Completada'?'selected':''}>Completada</option>
+        </select>
+        <button type="button" class="btn-delete" data-id="${orden.id}">Eliminar</button>
+      </div>
+    `;
+    return card;
+  }
+
+  function render(){
+    const list = document.getElementById('orderList');
+    const empty = document.getElementById('emptyState');
+    list.innerHTML = '';
+
+    document.getElementById('statTotal').textContent = ordenes.length;
+    document.getElementById('statPendiente').textContent = ordenes.filter(o => o.estado === 'Pendiente').length;
+    document.getElementById('statProceso').textContent = ordenes.filter(o => o.estado === 'En proceso').length;
+    document.getElementById('statCompletada').textContent = ordenes.filter(o => o.estado === 'Completada').length;
+
+    const filtradas = ordenes.filter(o => {
+      const coincideEstado = filtroEstado === 'todas' || o.estado === filtroEstado;
+      const texto = (o.placa + ' ' + o.cliente + ' ' + o.marcaModelo).toLowerCase();
+      const coincideTexto = !filtroTexto || texto.includes(filtroTexto);
+      return coincideEstado && coincideTexto;
+    });
+
+    if (ordenes.length === 0){
+      empty.style.display = 'flex';
+      empty.querySelector('p').textContent = 'Todavía no hay órdenes registradas';
+      empty.querySelector('span').textContent = 'Crea la primera con el botón "+ Nueva orden"';
+    } else if (filtradas.length === 0){
+      empty.style.display = 'flex';
+      empty.querySelector('p').textContent = 'Ninguna orden coincide con tu búsqueda';
+      empty.querySelector('span').textContent = 'Prueba con otro filtro o término';
+    } else {
+      empty.style.display = 'none';
+      filtradas.forEach(o => list.appendChild(crearCardOrden(o)));
+    }
+  }
+
+  document.getElementById('orderList').addEventListener('change', async (e) => {
+    if (!e.target.classList.contains('estado-select')) return;
+    const id = e.target.getAttribute('data-id');
+    const nuevoEstado = e.target.value;
+    try{
+      await api('/api/ordenes/' + id + '/estado', { method: 'PUT', body: { estado: nuevoEstado } });
+      showToast('Estado actualizado → ' + nuevoEstado);
+    }catch(err){
+      showToast('⚠ ' + err.message);
+    }
+    await cargarOrdenes();
+  });
+
+  document.getElementById('orderList').addEventListener('click', async (e) => {
+    if (!e.target.classList.contains('btn-delete')) return;
+    if (!confirm('¿Eliminar esta orden? Se borrarán también sus síntomas, diagnósticos y reparaciones.')) return;
+    const id = e.target.getAttribute('data-id');
+    try{
+      await api('/api/ordenes/' + id, { method: 'DELETE' });
+      showToast('Orden eliminada');
+    }catch(err){
+      showToast('⚠ ' + err.message);
+    }
+    await cargarOrdenes();
+  });
+
+  // Si venimos desde otra página pidiendo abrir el modal directamente
+  const params = new URLSearchParams(window.location.search);
+  if (params.get('abrir') === 'orden') openModal('modalOrden');
+
+  cargarOrdenes();
+</script>
+ 
+</body>
+</html>
+ 

@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>J&D · Taller Digital</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Inter:wght@400;500&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <div class="stage">
+    <div class="eyebrow"><span class="dot"></span>MECÁNICA AUTOMOTRIZ J&amp;D · TALLER DIGITAL</div>
+
+    <h1 class="greeting">
+      <svg class="wrench" viewBox="0 0 24 24" fill="none" stroke="#E8790A" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M14.7 6.3a4 4 0 0 0-5.6 5.6L3 18l3 3 6.1-6.1a4 4 0 0 0 5.6-5.6l-2.5 2.5-2-2z"/>
+      </svg>
+      <span id="greetingText">Buenos días, Mecánico</span>
+    </h1>
+    <p class="subline">¿Cuál es tu consulta?</p>
+
+    <div class="panel">
+      <div class="input-row">
+        <div class="fake-input">Describe el síntoma, la placa o el vehículo…</div>
+      </div>
+      <div class="panel-footer">
+        <div class="mode-group">
+          <div class="mode active">Diagnóstico</div>
+          <div class="mode">Historial</div>
+        </div>
+        <div class="plate">
+          <svg class="mic" viewBox="0 0 24 24" fill="none" stroke="#A6A092" stroke-width="1.8" stroke-linecap="round">
+            <path d="M12 15a3 3 0 0 0 3-3V6a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3z"/>
+            <path d="M19 11a7 7 0 0 1-14 0"/>
+            <path d="M12 18v3"/>
+          </svg>
+          J&amp;D · PLACA / VIN
+        </div>
+      </div>
+    </div>
+
+<div class="actions">
+
+  <a href="historial.html" class="action">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+         stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M3 12h18M3 6h18M3 18h18"/>
+    </svg>
+    Historial del vehículo
+  </a>
+  
+  <a href="Orden.html" class="action">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+         stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="4" y="4" width="16" height="16" rx="2"/>
+      <path d="M8 2v4M16 2v4M4 10h16"/>
+    </svg>
+    Nueva orden de trabajo
+
+  </a>
+  <a href="Mantenimiento.html" class="action">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+         stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M12 2v20M2 12h20"/>
+    </svg>
+    Mantenimiento preventivo
+  </a>
+  
+  <a href="Reporte.html" class="action">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+         stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M4 19h16M4 15l4-4 4 3 6-7"/>
+    </svg>
+    Reportes
+  </a>
+
+
+</div>
+
+    <div class="footnote">SISTEMA WEB INTELIGENTE DE GESTIÓN Y DIAGNÓSTICO — J&amp;D</div>
+  </div>
+
+<script>
+  const hour = new Date().getHours();
+  let saludo;
+  if (hour < 12) saludo = "Buenos días";
+  else if (hour < 19) saludo = "Buenas tardes";
+  else saludo = "Buenas noches";
+  document.getElementById('greetingText').textContent = saludo + ", Mecánico";
+</script>
+
+</body>
+</html>

@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Reportes · J&D Taller Digital</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Inter:wght@400;500&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="Reporte.css">
+</head>
+<body>
+
+<div class="page">
+
+  <!-- ===== HEADER ===== -->
+  <header class="top">
+    <div class="eyebrow"><span class="dot"></span>MECÁNICA AUTOMOTRIZ J&amp;D · TALLER DIGITAL</div>
+    <div class="top-row">
+      <h1 class="title">
+        <svg class="wrench" viewBox="0 0 24 24" fill="none" stroke="#E8790A" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M4 19h16M4 15l4-4 4 3 6-7"/>
+        </svg>
+        Reportes
+      </h1>
+      <div class="top-actions no-print">
+        <a href="index.html" class="btn-secondary">← Inicio</a>
+        <button type="button" class="btn-secondary" id="btnCsv">Descargar CSV</button>
+        <button type="button" class="btn-primary" id="btnImprimir">Imprimir</button>
+      </div>
+    </div>
+    <p class="subline">Vista consolidada de todas las órdenes de trabajo y mantenimientos preventivos del taller.</p>
+  </header>
+
+  <!-- ===== ESTADÍSTICAS ===== -->
+  <section class="stats">
+    <div class="stat-card">
+      <div class="stat-value" id="statTotal">0</div>
+      <div class="stat-label">Total registros</div>
+    </div>
+    <div class="stat-card stat-ordenes">
+      <div class="stat-value" id="statOrdenes">0</div>
+      <div class="stat-label">Órdenes de trabajo</div>
+    </div>
+    <div class="stat-card stat-mant">
+      <div class="stat-value" id="statMant">0</div>
+      <div class="stat-label">Mantenimientos</div>
+    </div>
+    <div class="stat-card stat-abiertos">
+      <div class="stat-value" id="statAbiertos">0</div>
+      <div class="stat-label">Pendientes / vencidos</div>
+    </div>
+  </section>
+
+  <!-- ===== FILTROS ===== -->
+  <section class="filters no-print">
+    <div class="fake-input-row">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#A6A092" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="11" cy="11" r="7"/>
+        <path d="M21 21l-4.3-4.3"/>
+      </svg>
+      <input type="text" id="buscador" placeholder="Buscar por placa, cliente o tipo…">
+    </div>
+    <div class="filter-chips" id="filterChips">
+      <button type="button" class="chip active" data-tipo="todos">Todos</button>
+      <button type="button" class="chip" data-tipo="orden">Órdenes de trabajo</button>
+      <button type="button" class="chip" data-tipo="mantenimiento">Mantenimientos</button>
+    </div>
+  </section>
+
+  <!-- ===== LISTA DE REPORTES ===== -->
+  <section class="report-list" id="reportList">
+    <!-- Las filas se generan dinámicamente aquí -->
+  </section>
+
+  <!-- ===== ESTADO VACÍO ===== -->
+  <div class="empty-state" id="emptyState">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M4 19h16M4 15l4-4 4 3 6-7"/>
+    </svg>
+    <p>Todavía no hay nada que reportar</p>
+    <span>Crea órdenes de trabajo o mantenimientos para verlos aquí</span>
+  </div>
+
+  <div class="footnote">SISTEMA WEB INTELIGENTE DE GESTIÓN Y DIAGNÓSTICO — J&amp;D · Reporte generado <span id="fechaGenerado"></span></div>
+</div>
+
+<script src="api.js"></script>
+<script>
+  let ordenes = [];
+  let mantenimientos = [];
+
+  function hoyISO(){ return new Date().toISOString().slice(0,10); }
+  function formatearFecha(iso){
+    if(!iso) return 'Sin fecha';
+    const [y,m,d] = iso.split('-');
+    return d + '/' + m + '/' + y;
+  }
+
+  function estadoRealMant(m){
+    if (m.estado === 'Realizado') return 'Realizado';
+    if (m.fechaProgramada && m.fechaProgramada < hoyISO()) return 'Vencido';
+    return 'Programado';
+  }
+
+  function badgeClaseEstado(estado){
+    if (estado === 'Completada' || estado === 'Realizado') return 'badge badge-completada';
+    if (estado === 'Vencido' || estado === 'Urgente') return 'badge badge-urgente';
+    if (estado === 'En proceso') return 'badge badge-proceso';
+    return 'badge badge-pendiente';
+  }
+
+  /* ===================== CARGA DESDE LA BASE DE DATOS ===================== */
+  async function cargarDatos(){
+    try{
+      const resultados = await Promise.all([
+        api('/api/ordenes'),
+        api('/api/mantenimientos')
+      ]);
+      ordenes = resultados[0];
+      mantenimientos = resultados[1];
+    }catch(err){
+      ordenes = [];
+      mantenimientos = [];
+      const empty = document.getElementById('emptyState');
+      empty.style.display = 'flex';
+      empty.querySelector('p').textContent = 'No se pudo cargar el reporte';
+      empty.querySelector('span').textContent = err.message;
+      return;
+    }
+    render();
+  }
+
+  // Une órdenes y mantenimientos en una sola lista de registros
+  function construirRegistros(){
+    const listaOrdenes = ordenes.map(o => ({
+      tipo: 'orden',
+      tipoLabel: 'Orden de trabajo',
+      placa: o.placa,
+      cliente: o.cliente,
+      detalle: o.marcaModelo || '',
+      referencia: o.sintoma || '',
+      referenciaLabel: 'Síntoma',
+      estado: o.estado,
+      fecha: o.fecha,
+      prioridad: o.prioridad
+    }));
+
+    const listaMant = mantenimientos.map(m => ({
+      tipo: 'mantenimiento',
+      tipoLabel: 'Mantenimiento preventivo',
+      placa: m.placa,
+      cliente: '',
+      detalle: m.tipo || '',
+      referencia: m.notas || (m.fechaProgramada ? 'Programado para ' + formatearFecha(m.fechaProgramada) : ''),
+      referenciaLabel: 'Notas',
+      estado: estadoRealMant(m),
+      fecha: m.fecha,
+      prioridad: ''
+    }));
+
+    return listaOrdenes.concat(listaMant).sort((a,b) => (b.fecha || '').localeCompare(a.fecha || ''));
+  }
+
+  /* ===================== FILTROS ===================== */
+  let filtroTipo = 'todos';
+  let filtroTexto = '';
+
+  document.getElementById('filterChips').addEventListener('click', (e) => {
+    const chip = e.target.closest('.chip');
+    if (!chip) return;
+    document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+    chip.classList.add('active');
+    filtroTipo = chip.getAttribute('data-tipo');
+    render();
+  });
+
+  document.getElementById('buscador').addEventListener('input', (e) => {
+    filtroTexto = e.target.value.trim().toLowerCase();
+    render();
+  });
+
+  /* ===================== RENDER ===================== */
+  function crearFila(r){
+    const row = document.createElement('div');
+    row.className = 'report-row';
+    row.innerHTML = `
+      <div class="report-tag ${r.tipo === 'orden' ? 'tag-orden' : 'tag-mant'}">${esc(r.tipoLabel)}</div>
+      <div class="report-main">
+        <div class="report-head">
+          <span class="report-plate">${esc(r.placa)}</span>
+          ${r.cliente ? `<span class="report-cliente">${esc(r.cliente)}</span>` : ''}
+        </div>
+        ${r.detalle ? `<div class="report-detalle">${esc(r.detalle)}</div>` : ''}
+        ${r.referencia ? `<div class="report-ref"><strong>${esc(r.referenciaLabel)}:</strong> ${esc(r.referencia)}</div>` : ''}
+      </div>
+      <div class="report-side">
+        <span class="${badgeClaseEstado(r.estado)}">${esc(r.estado)}</span>
+        <div class="report-date">📅 ${esc(formatearFecha(r.fecha))}</div>
+      </div>
+    `;
+    return row;
+  }
+
+  function render(){
+    const registros = construirRegistros();
+    const list = document.getElementById('reportList');
+    const empty = document.getElementById('emptyState');
+    list.innerHTML = '';
+
+    const totalOrdenes = registros.filter(r => r.tipo === 'orden').length;
+    const totalMant = registros.filter(r => r.tipo === 'mantenimiento').length;
+    const abiertos = registros.filter(r => ['Pendiente','En proceso','Programado','Vencido'].includes(r.estado)).length;
+
+    document.getElementById('statTotal').textContent = registros.length;
+    document.getElementById('statOrdenes').textContent = totalOrdenes;
+    document.getElementById('statMant').textContent = totalMant;
+    document.getElementById('statAbiertos').textContent = abiertos;
+
+    const filtrados = registros.filter(r => {
+      const coincideTipo = filtroTipo === 'todos' || r.tipo === filtroTipo;
+      const texto = (r.placa + ' ' + r.cliente + ' ' + r.detalle).toLowerCase();
+      const coincideTexto = !filtroTexto || texto.includes(filtroTexto);
+      return coincideTipo && coincideTexto;
+    });
+
+    if (registros.length === 0){
+      empty.style.display = 'flex';
+      empty.querySelector('p').textContent = 'Todavía no hay nada que reportar';
+      empty.querySelector('span').textContent = 'Crea órdenes de trabajo o mantenimientos para verlos aquí';
+    } else if (filtrados.length === 0){
+      empty.style.display = 'flex';
+      empty.querySelector('p').textContent = 'Ningún registro coincide con tu búsqueda';
+      empty.querySelector('span').textContent = 'Prueba con otro filtro o término';
+    } else {
+      empty.style.display = 'none';
+      filtrados.forEach(r => list.appendChild(crearFila(r)));
+    }
+    return filtrados;
+  }
+
+  /* ===================== IMPRIMIR / CSV ===================== */
+  document.getElementById('btnImprimir').addEventListener('click', () => window.print());
+
+  document.getElementById('btnCsv').addEventListener('click', () => {
+    const registros = construirRegistros();
+    const encabezado = ['Tipo','Placa','Cliente','Detalle','Estado','Fecha'];
+    const filas = registros.map(r => [r.tipoLabel, r.placa, r.cliente, r.detalle, r.estado, r.fecha]);
+    const csv = [encabezado, ...filas]
+      .map(fila => fila.map(v => `"${(v || '').toString().replace(/"/g,'""')}"`).join(','))
+      .join('\n');
+    const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'reporte_jd_taller_' + hoyISO() + '.csv';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  });
+
+  document.getElementById('fechaGenerado').textContent = formatearFecha(hoyISO());
+  cargarDatos();
+</script>
+
+</body>
+</html>
