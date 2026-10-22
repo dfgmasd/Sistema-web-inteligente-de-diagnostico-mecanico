@@ -1,0 +1,45 @@
+
+name: CI - Sistema J&D
+
+on:
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  validar:
+    name: Compilar y validar codigo
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Descargar repositorio
+        uses: actions/checkout@v4
+
+      - name: Configurar Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Compilar archivos Java
+        run: |
+          mkdir -p out
+          javac -d out Main.java CConexion.java
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Validar sintaxis de JavaScript
+        run: node --check api.js
+
+      - name: Verificar archivos principales
+        run: |
+          test -f Main.java
+          test -f CConexion.java
+          test -f indice.html
+          test -f api.js
